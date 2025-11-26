@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend Docker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Docker Compose App</h1>
+
+    <!-- Form to Add User -->
+    <div>
+      <h2>Add User</h2>
+      <form id="userForm">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <button type="submit">Add User</button>
+      </form>
+      <div id="formResult"></div>
+    </div>
+
+    <!-- List Users -->
+    <div>
+      <h2>Users</h2>
+      <button onclick="fetchUsers()">List Users</button>
+      <div id="userList">Click to load users...</div>
+    </div>
+
+    <!-- Test Backend -->
+    <button onclick="fetchData()">Get Backend Data</button>
+    <div id="result">Click to test...</div>
+  </div>
+
+  <script>
+    // Test Backend
+    async function fetchData() {
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "Loading...";
+      try {
+        const response = await fetch("http://localhost:3000/api");
+        const data = await response.json();
+        resultDiv.innerHTML = `
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          <p style="color: green">Success via localhost:3000!</p>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <p style="color: red">Error: ${error.message}</p>
+          <p>Check CORS in backend logs</p>
+        `;
+        console.error("Fetch error:", error);
+      }
+    }
+
+    // Add User
+    document.getElementById("userForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const formResult = document.getElementById("formResult");
+
+      try {
+        const response = await fetch("http://localhost:3000/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+          formResult.innerHTML = `<p style="color: green">User added: ${data.user.name}</p>`;
+          document.getElementById("userForm").reset();
+          fetchUsers(); // Refresh user list
+        } else {
+          formResult.innerHTML = `<p style="color: red">Error: ${data.error}</p>`;
+        }
+      } catch (error) {
+        formResult.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+      }
+    });
+
+    // List Users
+    async function fetchUsers() {
+      const userList = document.getElementById("userList");
+      userList.innerHTML = "Loading users...";
+      try {
+        const response = await fetch("http://localhost:3000/api/users");
+        const users = await response.json();
+        if (response.ok) {
+          userList.innerHTML = users.length
+            ? `<ul>${users.map(user => `<li>${user.name} (${user.email})</li>`).join("")}</ul>`
+            : "<p>No users found</p>";
+        } else {
+          userList.innerHTML = `<p style="color: red">Error: ${users.error}</p>`;
+        }
+      } catch (error) {
+        userList.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+      }
+    }
+
+    setTimeout(fetchData, 1000);
+  </script>
+</body>
+</html>

@@ -1,8 +1,3 @@
-
-FROM mongo:4.4
-
-EXPOSE 27017
-
-VOLUME /data/db
-
-CMD ["mongod"]
+FROM postgres:15-alpine
+COPY init.sql /docker-entrypoint-initdb.d/init.sql
+EXPOSE 5432
